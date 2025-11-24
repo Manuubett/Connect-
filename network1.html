@@ -1,0 +1,964 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+  <meta charset="utf-8" />  
+  <meta name="viewport" content="width=device-width,initial-scale=1" />  
+  <title>Network — FollowUp Connect</title>  
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">    
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>    
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>    
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>    
+  <style>  
+    :root { 
+      --primary: #2563eb; 
+      --primary-light: #3b82f6; 
+      --primary-dark: #1d4ed8; 
+      --secondary: #64748b; 
+      --muted: #94a3b8; 
+      --light: #f8fafc; 
+      --card: #ffffff; 
+      --bg: #f1f5f9; 
+      --success: #10b981; 
+      --warning: #f59e0b; 
+      --danger: #ef4444; 
+      --border: #e2e8f0; 
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }  
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body { 
+      font-family: 'Poppins', sans-serif; 
+      background: var(--bg); 
+      margin: 0; 
+      color: #1e293b; 
+      line-height: 1.6;
+    }  
+    
+    header { 
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+      color: #fff; 
+      padding: 24px 20px; 
+      text-align: center; 
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }  
+    
+    .container { 
+      max-width: 1200px; 
+      margin: 30px auto; 
+      padding: 0 20px; 
+      display: grid; 
+      grid-template-columns: 1fr 340px; 
+      gap: 30px; 
+    }  
+    
+    .main-content {
+      min-height: 600px;
+    }
+    
+    .controls { 
+      display: flex; 
+      gap: 15px; 
+      flex-wrap: wrap; 
+      margin: 20px 0 30px; 
+      align-items: center; 
+      background: var(--card);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }  
+    
+    .controls input, .controls select { 
+      padding: 12px 16px; 
+      border-radius: 10px; 
+      border: 1px solid var(--border); 
+      font-size: 0.95rem; 
+      flex: 1;
+      min-width: 200px;
+      transition: all 0.2s;
+    }  
+    
+    .controls input:focus, .controls select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+      gap: 20px; 
+    }  
+    
+    .card { 
+      background: var(--card); 
+      padding: 20px; 
+      border-radius: 16px; 
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid var(--border);
+    }  
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .user-row { 
+      display: flex; 
+      gap: 15px; 
+      align-items: flex-start; 
+    }  
+    
+    .avatar { 
+      width: 64px; 
+      height: 64px; 
+      border-radius: 50%; 
+      object-fit: cover; 
+      cursor: pointer; 
+      border: 3px solid var(--primary-light);
+      transition: transform 0.2s;
+    }  
+    
+    .avatar:hover {
+      transform: scale(1.05);
+    }
+    
+    .btn { 
+      padding: 10px 16px; 
+      border-radius: 10px; 
+      border: 0; 
+      cursor: pointer; 
+      font-weight: 600; 
+      font-size: 0.92rem; 
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }  
+    
+    .btn-primary { 
+      background: var(--primary); 
+      color: #fff; 
+    }  
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+    
+    .btn-muted { 
+      background: #eff6ff; 
+      color: var(--primary); 
+    }  
+    
+    .btn-muted:hover {
+      background: #dbeafe;
+    }
+    
+    .btn-pending { 
+      background: #f8fafc; 
+      color: var(--secondary); 
+    }  
+    
+    .btn-danger { 
+      background: #fef2f2; 
+      color: var(--danger); 
+    }  
+    
+    .small { 
+      font-size: 0.88rem; 
+      color: var(--secondary); 
+    }  
+  
+    /* Requests Sidebar */  
+    .requests-sidebar {  
+      background: var(--card);  
+      border-radius: 16px;  
+      padding: 20px;  
+      box-shadow: var(--shadow);  
+      height: fit-content;  
+      border: 1px solid var(--border);
+    }  
+    
+    .requests-sidebar h3 { 
+      color: var(--primary); 
+      margin-bottom: 16px; 
+      font-weight: 600; 
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }  
+    
+    .request-item {  
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      padding: 14px 0;  
+      border-bottom: 1px solid var(--border);  
+    }  
+    
+    .request-item:last-child { 
+      border: none; 
+    }  
+    
+    .request-item img { 
+      width: 48px; 
+      height: 48px; 
+      border-radius: 50%; 
+      cursor: pointer; 
+      border: 2px solid var(--primary-light);
+    }  
+  
+    /* Profile Drawer */  
+    .profile-drawer {  
+      position: fixed; 
+      right: 20px; 
+      top: 100px; 
+      width: 380px; 
+      max-width: 90%;  
+      background: #fff; 
+      border-radius: 16px; 
+      box-shadow: var(--shadow-lg);  
+      padding: 24px; 
+      display: none; 
+      z-index: 120;  
+      border: 1px solid var(--border);
+      animation: slideInRight 0.3s ease-out;
+    }  
+    
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .drawer-close { 
+      margin-left: auto; 
+      cursor: pointer; 
+      font-size: 1.5rem; 
+      color: var(--muted); 
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }  
+    
+    .drawer-close:hover {
+      background: #f1f5f9;
+    }
+    
+    .section-title { 
+      color: var(--primary); 
+      margin: 16px 0 12px; 
+      font-weight: 600; 
+      font-size: 1.1rem;
+    }  
+    
+    .empty { 
+      text-align: center; 
+      color: var(--muted); 
+      padding: 60px 20px; 
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }  
+  
+    .modal {  
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(0, 0, 0, 0.5);  
+      z-index: 9999; 
+      justify-content: center; 
+      align-items: center;  
+      backdrop-filter: blur(4px);
+    }  
+    
+    .modal-content {  
+      background: white; 
+      padding: 32px; 
+      border-radius: 20px; 
+      text-align: center;  
+      max-width: 450px; 
+      box-shadow: var(--shadow-lg);  
+      animation: scaleIn 0.3s ease-out;
+    }  
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Navigation Styles */
+    nav {  
+      background: var(--primary);  
+      padding: 0 20px;  
+      display: flex;  
+      gap: 10px;  
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }  
+    
+    nav a {  
+      color: #fff;  
+      text-decoration: none;  
+      font-size: 16px;  
+      padding: 16px 20px;  
+      border-radius: 0;  
+      transition: 0.3s ease;  
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+    }  
+    
+    nav a:hover,
+    nav a.active {  
+      background: rgba(255, 255, 255, 0.1);  
+      border-bottom: 3px solid white;
+    }
+    
+    .user-profile-nav {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      cursor: pointer;
+      padding: 10px 0;
+    }
+    
+    .profile-pic-nav {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid white;
+      transition: transform 0.2s;
+    }
+    
+    .profile-pic-nav:hover {
+      transform: scale(1.05);
+    }
+    
+    .connections-count {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+  
+    .modal-icon { 
+      font-size: 4rem; 
+      color: var(--success); 
+      margin-bottom: 16px; 
+    }  
+    
+    /* Image Preview Modal */
+    .image-preview-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(5px);
+    }
+    
+    .image-preview-content {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    
+    .image-preview-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.5);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    
+    .image-preview-close:hover {
+      background: rgba(0, 0, 0, 0.7);
+    }
+    
+    .user-info {
+      flex: 1;
+    }
+    
+    .user-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+    
+    .user-details {
+      margin-bottom: 8px;
+    }
+    
+    .user-stats {
+      display: flex;
+      gap: 15px;
+      margin-top: 5px;
+    }
+    
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.85rem;
+    }
+    
+    .stat i {
+      color: var(--primary);
+    }
+  
+    @media (max-width: 1024px) { 
+      .container { 
+        grid-template-columns: 1fr; 
+      } 
+      
+      .requests-sidebar { 
+        order: -1; 
+        margin-bottom: 20px; 
+      } 
+    }  
+    
+    @media (max-width: 768px) { 
+      .controls { 
+        flex-direction: column; 
+        align-items: stretch;
+      } 
+      
+      .controls input, .controls select {
+        min-width: auto;
+      }
+      
+      nav {
+        padding: 0 10px;
+        flex-wrap: wrap;
+      }
+      
+      nav a {
+        padding: 12px 15px;
+        font-size: 14px;
+      }
+      
+      .user-profile-nav span:not(.connections-count) {
+        display: none;
+      }
+      
+      .profile-drawer {
+        width: 95%;
+        right: 2.5%;
+      }
+    }  
+  
+  </style>  
+</head>  
+<body>  
+  <header>    
+    <h1 style="margin: 0 0 8px 0; font-weight: 700; font-size: 1.8rem;">Network — Find People & Mentors</h1>  
+    <div class="small" style="opacity: 0.9;">Search, connect, and grow your professional network</div>  
+  </header>  
+  
+  <!-- Navigation -->
+  <nav>  
+    <a href="compus home.html"><i class="fas fa-home"></i> Home</a>  
+    <a href="network.html" class="active"><i class="fas fa-users"></i> Network</a>  
+    <a href="compus profile.html"><i class="fas fa-user"></i> Profile</a>
+    <a href="chat.html"><i class="fas fa-comments"></i> Chats</a>
+    
+    <!-- User Profile Section in Nav -->
+    <div class="user-profile-nav" id="userProfileNav">
+      <span id="userNameNav">User</span>
+      <div class="connections-count" id="connectionsCount">0</div>
+      <img id="profilePicNav" src="https://via.placeholder.com/40" class="profile-pic-nav" alt="Profile">
+    </div>
+  </nav>  
+  
+  <div class="container">  
+    <div class="main-content">  
+              <!-- ADS -->
+  <div id="ad-container" style="width: 320px; height: 50px; margin: 20px auto;">
+    <script type="text/javascript">
+        atOptions = { 'key' : '71c74ed2c78fa84b504991cc8233aa2f', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/71c74ed2c78fa84b504991cc8233aa2f/invoke.js"></script>
+  </div>
+      <div class="controls">  
+        <input id="searchInput" placeholder="Search by name, campus, course, or year..." />  
+        <select id="statusFilter">  
+          <option value="">All status</option>  
+          <option value="Undergraduate">Undergraduate</option>  
+          <option value="Graduate">Graduate</option>  
+          <option value="Non-Undergraduate">Non-Undergraduate</option>  
+        </select>  
+        <select id="sortBy">  
+          <option value="recent">Newest</option>  
+          <option value="connections">Most connected</option>  
+        </select>  
+        <div style="margin-left: auto;">  
+          <button id="myRequestsBtn" class="btn btn-muted">
+            <i class="fas fa-user-clock"></i> Requests
+          </button>  
+        </div>  
+      </div>  
+      <div id="results" class="grid"></div>  
+      <div id="empty" class="empty" style="display:none;">
+        <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+        <h3 style="margin: 0 0 10px 0; color: var(--secondary);">No users found</h3>
+        <p style="margin: 0; color: var(--muted);">Try adjusting your search criteria</p>
+      </div>  
+    </div>
+    
+    
+    <!-- Incoming Requests Sidebar -->    
+    <div class="requests-sidebar">  
+      <h3><i class="fas fa-user-plus"></i> Connection Requests</h3>  
+      <div id="requestsList">  
+        <div class="empty" style="padding: 30px 20px;">
+          <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+          <p style="margin: 0; color: var(--muted);">No pending requests</p>
+        </div
+        
+      </div>  
+    </div>  
+  </div>  
+  
+  <!-- Profile Drawer -->  
+  <div id="drawer" class="profile-drawer">  
+    <div style="display:flex;align-items:flex-start;gap:15px;">  
+      <img id="drawerAvatar" src="https://via.placeholder.com/80" width="80" height="80" style="border-radius:12px;object-fit:cover;cursor:pointer;">  
+      <div style="flex: 1;">  
+        <div id="drawerName" style="font-weight:700; font-size: 1.3rem;"></div>  
+        <div id="drawerCampus" class="small" style="margin-top: 5px;"></div>  
+        <div id="drawerConnections" class="small" style="margin-top: 5px;"></div>  
+      </div>  
+      <div class="drawer-close" id="drawerClose">×</div>  
+    </div>  
+    <div style="margin-top:20px;">  
+      <div class="section-title">About</div>  
+      <div id="drawerCourse" class="small" style="margin-bottom: 8px;"></div>  
+      <div id="drawerStatus" class="small" style="margin-bottom: 8px;"></div>  
+      <div id="drawerGradYear" class="small" style="margin-bottom: 8px;"></div>  
+      <div id="drawerWork" class="small" style="margin-bottom: 8px;"></div>  
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap: wrap;">  
+        <button id="drawerConnectBtn" class="btn btn-primary">
+          <i class="fas fa-user-plus"></i> Connect
+        </button>  
+        <button id="drawerMessageBtn" class="btn btn-muted">
+          <i class="fas fa-comment"></i> Message
+        </button>  
+                  <!-- ADS -->
+  <div id="ad-container" style="width: 320px; height: 50px; margin: 20px auto;">
+    <script type="text/javascript">
+        atOptions = { 'key' : '71c74ed2c78fa84b504991cc8233aa2f', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/71c74ed2c78fa84b504991cc8233aa2f/invoke.js"></script>
+  </div>
+      </div>  
+    </div>  
+  </div>  
+  
+  <!-- Image Preview Modal -->
+  <div class="image-preview-modal" id="imagePreviewModal">
+    <div class="image-preview-close" id="imagePreviewClose">×</div>
+    <img id="previewImage" class="image-preview-content" src="" alt="Profile preview">
+  </div>
+  
+  <!-- Acceptance Modal -->  
+  <div class="modal" id="successModal">  
+    <div class="modal-content">  
+      <div class="modal-icon"><i class="fas fa-check-circle"></i></div>  
+      <h3 style="margin: 0 0 10px 0;">Connection Accepted!</h3>  
+      <p id="acceptedName" style="margin:16px 0;font-size:1.1rem; color: var(--secondary);"></p>  
+      <button class="btn btn-primary" onclick="openChatFromModal()">
+        <i class="fas fa-comment"></i> Send Message
+      </button>  
+      <div style="margin-top:16px;">
+        <a href="#" style="color:var(--primary); text-decoration: none;" onclick="document.getElementById('successModal').style.display='none'">Dismiss</a>
+      </div>  
+
+    </div>  
+  </div>  
+  
+  <script>  
+    const firebaseConfig = {  
+      apiKey: "AIzaSyC23iQpw8dvOamO5FpcrWWlgTwJ8gvmuM4",  
+      authDomain: "reconnect-10733.firebaseapp.com",  
+      projectId: "reconnect-10733",  
+      storageBucket: "reconnect-10733.firebasestorage.app",  
+      messagingSenderId: "902709752297",  
+      appId: "1:902709752297:web:b89e694688d25472ac1b78"  
+    };  
+    firebase.initializeApp(firebaseConfig);  
+    const auth = firebase.auth();  
+    const db = firebase.firestore();  
+    
+    const results = document.getElementById('results');  
+    const searchInput = document.getElementById('searchInput');  
+    const statusFilter = document.getElementById('statusFilter');  
+    const sortBy = document.getElementById('sortBy');  
+    const empty = document.getElementById('empty');  
+    const drawer = document.getElementById('drawer');  
+    const drawerClose = document.getElementById('drawerClose');  
+    const drawerAvatar = document.getElementById('drawerAvatar');  
+    const drawerName = document.getElementById('drawerName');  
+    const drawerCampus = document.getElementById('drawerCampus');  
+    const drawerConnections = document.getElementById('drawerConnections');  
+    const drawerCourse = document.getElementById('drawerCourse');  
+    const drawerStatus = document.getElementById('drawerStatus');  
+    const drawerGradYear = document.getElementById('drawerGradYear');  
+    const drawerWork = document.getElementById('drawerWork');  
+    const drawerConnectBtn = document.getElementById('drawerConnectBtn');  
+    const drawerMessageBtn = document.getElementById('drawerMessageBtn');  
+    
+    // Image preview elements
+    const imagePreviewModal = document.getElementById('imagePreviewModal');
+    const imagePreviewClose = document.getElementById('imagePreviewClose');
+    const previewImageElement = document.getElementById('previewImage'); // Renamed to avoid conflict
+    
+    // Navigation elements
+    const userProfileNav = document.getElementById('userProfileNav');
+    const profilePicNav = document.getElementById('profilePicNav');
+    const userNameNav = document.getElementById('userNameNav');
+    const connectionsCount = document.getElementById('connectionsCount');
+    
+    let currentUser = null;  
+    let profiles = [];  
+    let lastAcceptedUid = null;  
+    
+    auth.onAuthStateChanged(async user => {  
+      if (!user) return location.href = "index.html";  
+      currentUser = user;  
+      await loadCurrentUserProfile();
+      await loadProfiles();  
+      renderRequests();  
+      listenForAcceptances();  
+    });  
+    
+    // Load current user's profile for navigation
+    async function loadCurrentUserProfile() {
+      const userDoc = await db.collection('users').doc(currentUser.uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        userNameNav.textContent = userData.name || 'User';
+        profilePicNav.src = userData.photoUrl || 'https://via.placeholder.com/40';
+        
+        // Show connections count
+        const connections = userData.connections || [];
+        connectionsCount.textContent = connections.length;
+      }
+    }
+    
+    async function loadProfiles() {  
+      results.innerHTML = '<div class="empty" style="display: flex;"><i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Loading users...</div>';  
+      const snap = await db.collection('users').get();  
+      profiles = snap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(p => p.name);  
+      renderProfiles();  
+    }  
+    
+    async function getConnectionState(targetUid) {  
+      if (!currentUser || currentUser.uid === targetUid) return 'self';  
+      const userDoc = await db.collection("users").doc(currentUser.uid).get();  
+      const data = userDoc.data() || {};  
+      if (data.connections?.includes(targetUid)) return 'connected';  
+      if (data.sentRequests?.includes(targetUid)) return 'pending_sent';  
+      if (data.receivedRequests?.includes(targetUid)) return 'pending_received';  
+      return 'none';  
+    }  
+    
+    async function renderProfiles() {  
+      const q = searchInput.value.trim().toLowerCase();  
+      const status = statusFilter.value;  
+    
+      let list = profiles.filter(p => p.uid !== currentUser.uid);  
+    
+      if (status) list = list.filter(p => (p.status || '').toLowerCase() === status.toLowerCase());  
+      if (q) {  
+        list = list.filter(p =>   
+          (p.name?.toLowerCase().includes(q)) ||  
+          (p.campus?.toLowerCase().includes(q)) ||  
+          (p.course?.toLowerCase().includes(q)) ||  
+          String(p.gradYear || '').includes(q)  
+        );  
+      }  
+    
+      // Sort by selected option
+      if (sortBy.value === 'connections') {
+        list.sort((a, b) => {
+          const aConnections = a.connections ? a.connections.length : 0;
+          const bConnections = b.connections ? b.connections.length : 0;
+          return bConnections - aConnections;
+        });
+      } else {
+        // Default to recent (already sorted by Firebase timestamp)
+      }
+    
+      results.innerHTML = '';  
+      if (!list.length) { empty.style.display = 'block'; return; }  
+      empty.style.display = 'none';  
+    
+      for (const profile of list) {  
+        const state = await getConnectionState(profile.uid);  
+        const connectionsCount = profile.connections ? profile.connections.length : 0;
+    
+        let actionHtml = '';  
+        if (state === 'connected') {  
+          actionHtml = `<div style="display:flex;gap:8px;flex-wrap: wrap;">  
+            <button class="btn btn-muted" onclick="viewProfile('${profile.uid}')">
+              <i class="fas fa-eye"></i> View
+            </button>  
+            <button class="btn btn-primary" onclick="openChat('${profile.uid}')">
+              <i class="fas fa-comment"></i> Message
+            </button>  
+          </div>`;  
+        } else if (state === 'pending_sent') {  
+          actionHtml = `<button class="btn btn-pending" onclick="cancelRequest('${profile.uid}')">
+            <i class="fas fa-clock"></i> Pending
+          </button>`;  
+        } else if (state === 'pending_received') {  
+          actionHtml = `<div style="display:flex;gap:8px;flex-wrap: wrap;">  
+            <button class="btn btn-primary" onclick="acceptRequest('${profile.uid}')">
+              <i class="fas fa-check"></i> Accept
+            </button>  
+            <button class="btn btn-danger" onclick="declineRequest('${profile.uid}')">
+              <i class="fas fa-times"></i> Decline
+            </button>  
+          </div>`;  
+        } else {  
+          actionHtml = `<div style="display:flex;gap:8px;flex-wrap: wrap;">  
+            <button class="btn btn-primary" onclick="sendRequest('${profile.uid}')">
+              <i class="fas fa-user-plus"></i> Connect
+            </button>  
+            <button class="btn btn-muted" onclick="viewProfile('${profile.uid}')">
+              <i class="fas fa-eye"></i> View
+            </button>  
+          </div>`;  
+        }  
+    
+        const card = document.createElement('div');  
+        card.className = 'card';  
+        card.innerHTML = `  
+          <div class="user-row">  
+            <img class="avatar" src="${profile.photoUrl || 'https://via.placeholder.com/56'}" alt="${profile.name}" onclick="showImagePreview('${profile.photoUrl || 'https://via.placeholder.com/56'}')">  
+            <div class="user-info">  
+              <div class="user-name">${profile.name}</div>  
+              <div class="user-details small">${profile.course || ''} • ${profile.campus || ''}</div>  
+              <div class="user-stats">
+                <div class="stat">
+                  <i class="fas fa-users"></i> ${connectionsCount} connections
+                </div>
+              </div>  
+              <div style="margin-top:15px;">${actionHtml}</div>  
+            </div>  
+          </div>  
+        `;  
+        results.appendChild(card);  
+      }  
+    }  
+    
+    // Sidebar: Incoming Requests  
+    async function renderRequests() {  
+      const list = document.getElementById("requestsList");  
+      const myDoc = await db.collection("users").doc(currentUser.uid).get();  
+      const requests = myDoc.data()?.receivedRequests || [];  
+    
+      if (requests.length === 0) {  
+        list.innerHTML = `<div class="empty" style="padding: 30px 20px;">
+          <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+          <p style="margin: 0; color: var(--muted);">No pending requests</p>
+        </div>`;  
+        return;  
+      }  
+    
+      list.innerHTML = "";  
+      for (const uid of requests.slice(0,6)) {  
+        const userDoc = await db.collection("users").doc(uid).get();  
+        if (!userDoc.exists) continue;  
+        const u = userDoc.data();  
+    
+        const item = document.createElement("div");  
+        item.className = "request-item";  
+        item.innerHTML = `  
+          <img src="${u.photoUrl || 'https://via.placeholder.com/48'}" alt="${u.name}" onclick="showImagePreview('${u.photoUrl || 'https://via.placeholder.com/48'}')">  
+          <div style="flex:1;">  
+            <div style="font-weight:600;">${u.name || 'User'}</div>  
+            <div class="small" style="color:#666;">Wants to connect</div>  
+          </div>  
+          <button class="btn btn-primary" style="padding:8px 12px;font-size:0.9rem;" onclick="acceptRequest('${uid}')">  
+            <i class="fas fa-check"></i> Accept
+          </button>  
+        `;  
+        list.appendChild(item);  
+      }  
+    }  
+    
+    // Image preview function (renamed to avoid conflict)
+    function showImagePreview(imageUrl) {
+      previewImageElement.src = imageUrl;
+      imagePreviewModal.style.display = "flex";
+    }
+    
+    // Close image preview
+    imagePreviewClose.onclick = () => {
+      imagePreviewModal.style.display = "none";
+    };
+    
+    // Close image preview when clicking outside the image
+    imagePreviewModal.onclick = (e) => {
+      if (e.target === imagePreviewModal) {
+        imagePreviewModal.style.display = "none";
+      }
+    };
+    
+    // Connection actions  
+    async function sendRequest(uid) {  
+      await db.collection("users").doc(currentUser.uid).update({ sentRequests: firebase.firestore.FieldValue.arrayUnion(uid) });  
+      await db.collection("users").doc(uid).update({ receivedRequests: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });  
+      renderProfiles();  
+    }  
+    
+    async function cancelRequest(uid) {  
+      await db.collection("users").doc(currentUser.uid).update({ sentRequests: firebase.firestore.FieldValue.arrayRemove(uid) });  
+      await db.collection("users").doc(uid).update({ receivedRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });  
+      renderProfiles();  
+    }  
+    
+    async function acceptRequest(uid) {  
+      const userSnap = await db.collection("users").doc(uid).get();  
+      const userData = userSnap.data();  
+    
+      await db.collection("users").doc(currentUser.uid).update({  
+        connections: firebase.firestore.FieldValue.arrayUnion(uid),  
+        receivedRequests: firebase.firestore.FieldValue.arrayRemove(uid)  
+      });  
+      await db.collection("users").doc(uid).update({  
+        connections: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),  
+        sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)  
+      });  
+    
+      lastAcceptedUid = uid;  
+      document.getElementById("acceptedName").textContent = `${userData.name} accepted your connection request!`;  
+      document.getElementById("successModal").style.display = "flex";  
+    
+      renderProfiles();  
+      renderRequests();  
+      loadCurrentUserProfile(); // Update connections count
+    }  
+    
+    async function declineRequest(uid) {  
+      await db.collection("users").doc(currentUser.uid).update({ receivedRequests: firebase.firestore.FieldValue.arrayRemove(uid) });  
+      await db.collection("users").doc(uid).update({ sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });  
+      renderProfiles();  
+    }  
+    
+    function openChat(uid) {  
+      window.location.href = `chat.html?with=${uid}`;  
+    }  
+    
+    function openChatFromModal() {  
+      document.getElementById("successModal").style.display = "none";  
+      if (lastAcceptedUid) openChat(lastAcceptedUid);  
+    }  
+    
+    // Real-time: someone accepted your request  
+    function listenForAcceptances() {  
+      db.collection("users").doc(currentUser.uid).onSnapshot(doc => {  
+        const data = doc.data() || {};  
+        const sent = data.sentRequests || [];  
+    
+        if (window.lastSent) {  
+          window.lastSent.forEach(uid => {  
+            if (!sent.includes(uid) && (data.connections || []).includes(uid)) {  
+              const user = profiles.find(p => p.uid === uid);  
+              if (user) {  
+                lastAcceptedUid = uid;  
+                document.getElementById("acceptedName").textContent = `${user.name} accepted your request!`;  
+                document.getElementById("successModal").style.display = "flex";  
+                loadCurrentUserProfile(); // Update connections count
+              }  
+            }  
+          });  
+        }  
+        window.lastSent = sent;  
+      });  
+    }  
+    
+    // Profile drawer  
+    async function viewProfile(uid) {  
+      const snap = await db.collection('users').doc(uid).get();  
+      if (!snap.exists) return;  
+      const p = snap.data();  
+      drawerAvatar.src = p.photoUrl || 'https://via.placeholder.com/80';  
+      drawerName.textContent = p.name || 'Unknown';  
+      drawerCampus.textContent = p.campus || '';  
+      drawerConnections.textContent = `${p.connections ? p.connections.length : 0} connections`;  
+      drawerCourse.textContent = p.course ? 'Course: ' + p.course : '';  
+      drawerStatus.textContent = p.status ? 'Status: ' + p.status : '';  
+      drawerGradYear.textContent = p.gradYear ? 'Graduation: ' + p.gradYear : '';  
+      drawerWork.textContent = p.workStatus ? 'Work: ' + p.workStatus : '';  
+      drawer.style.display = 'block';  
+    
+      const state = await getConnectionState(uid);  
+      drawerConnectBtn.textContent = state === 'connected' ? 'Connected' : state === 'pending_sent' ? 'Pending' : 'Connect';  
+      drawerConnectBtn.onclick = state === 'connected' ? null : 
+                                state === 'pending_sent' ? () => cancelRequest(uid) : 
+                                () => sendRequest(uid);
+      drawerMessageBtn.onclick = () => openChat(uid);  
+    }  
+    
+    drawerClose.onclick = () => drawer.style.display = 'none';  
+    
+    // Make profile picture in navigation clickable
+    userProfileNav.addEventListener('click', () => {
+      window.location.href = 'compus profile.html';
+    });
+    
+    // Search & filters  
+    ['input','change'].forEach(ev => {  
+      searchInput.addEventListener(ev, () => {  
+        clearTimeout(window.t);  
+        window.t = setTimeout(renderProfiles, 300);  
+      });  
+      statusFilter.addEventListener(ev, renderProfiles);  
+      sortBy.addEventListener(ev, renderProfiles);  
+    });  
+    
+  </script>  
+</body>  
+</html>

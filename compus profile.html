@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Complete Your Profile — FollowUp Connect</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --blue: #0066ff;
+      --light-blue: #eef2ff;
+      --gray: #666;
+      --bg: #f8faff;
+      --red: #e74c3c;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      padding: 34px;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      position: relative;
+    }
+    .logout {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      color: var(--gray);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+    }
+    .logout:hover { color: #e74c3c; }
+    h2 { color: var(--blue); margin: 0 0 8px; font-size: 1.6rem; }
+    .subtitle { color: var(--gray); margin-bottom: 8px; font-size: 0.98rem; }
+    .required { color: var(--red); font-weight: bold; }
+    .info { font-size: 0.88rem; color: #e74c3c; margin-top: -10px; margin-bottom: 20px; }
+
+    .field-label {
+      text-align: left;
+      margin: 18px 0 6px;
+      font-weight: 500;
+      color: #333;
+      display: block;
+    }
+    input, select {
+      width: 100%;
+      padding: 14px 16px;
+      margin: 8px 0;
+      border: 1.5px solid #ddd;
+      border-radius: 12px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: all 0.3s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(0,102,255,0.1);
+    }
+    input:invalid:focus { border-color: var(--red); }
+
+    .photo-section {
+      margin: 20px 0;
+    }
+    #preview {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 5px solid var(--light-blue);
+      box-shadow: 0 4px 15px rgba(0,102,255,0.2);
+      transition: all 0.3s;
+    }
+    #preview.default {
+      border-color: #fdb8b8;
+      background: #ffe5e5;
+    }
+
+    .btn {
+      background: var(--blue);
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      width: 100%;
+      font-weight: 600;
+      font-size: 1.05rem;
+      cursor: pointer;
+      margin-top: 28px;
+      transition: 0.3s;
+    }
+    .btn:hover:not(:disabled) { background: #0052cc; transform: translateY(-1px); }
+    .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    .loading { opacity: 0.6; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="container">
+    <button class="logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+
+    <h2>Complete Your Profile</h2>
+    <p class="subtitle">Help us connect you with the right alumni & mentors</p>
+    <p class="info">All fields marked with <span class="required">*</span> are required</p>
+
+    <!-- Profile Photo -->
+    <div class="photo-section">
+      <label class="field-label">Profile Photo <span class="required">*</span></label>
+      <img id="preview" class="default" src="https://via.placeholder.com/120/0066ff/ffffff?text=👤" alt="Profile">
+      <input type="file" id="photo" accept="image/*" required />
+      <small style="color:#e74c3c;">Clear photo = faster trust & connections</small>
+    </div>
+
+    <!-- Full Name -->
+    <label class="field-label">Full Name <span class="required">*</span></label>
+    <input type="text" id="name" placeholder="e.g., Priya Sharma" required />
+<!-- Country Field - Fully Typeable + 50+ African Countries Suggested -->
+<label class="field-label">Country <span class="required">*</span></label>
+<input 
+  list="countries" 
+  id="country" 
+  placeholder="Type your country (e.g. Kenya, Ghana, Nigeria)" 
+  required 
+/>
+<datalist id="countries">
+  <!-- 50+ African Countries + Popular Ones -->
+  <option value="Algeria">
+  <option value="Angola">
+  <option value="Benin">
+  <option value="Botswana">
+  <option value="Burkina Faso">
+  <option value="Burundi">
+  <option value="Cape Verde">
+  <option value="Cameroon">
+  <option value="Central African Republic">
+  <option value="Chad">
+  <option value="Comoros">
+  <option value="Democratic Republic of the Congo">
+  <option value="Republic of the Congo">
+  <option value="Djibouti">
+  <option value="Egypt">
+  <option value="Equatorial Guinea">
+  <option value="Eritrea">
+  <option value="Eswatini">
+  <option value="Ethiopia">
+  <option value="Gabon">
+  <option value="Gambia">
+  <option value="Ghana">
+  <option value="Guinea">
+  <option value="Guinea-Bissau">
+  <option value="Ivory Coast">
+  <option value="Kenya">
+  <option value="Lesotho">
+  <option value="Liberia">
+  <option value="Libya">
+  <option value="Madagascar">
+  <option value="Malawi">
+  <option value="Mali">
+  <option value="Mauritania">
+  <option value="Mauritius">
+  <option value="Morocco">
+  <option value="Mozambique">
+  <option value="Namibia">
+  <option value="Niger">
+  <option value="Nigeria">
+  <option value="Rwanda">
+  <option value="São Tomé and Príncipe">
+  <option value="Senegal">
+  <option value="Seychelles">
+  <option value="Sierra Leone">
+  <option value="Somalia">
+  <option value="South Africa">
+  <option value="South Sudan">
+  <option value="Sudan">
+  <option value="Tanzania">
+  <option value="Togo">
+  <option value="Tunisia">
+  <option value="Uganda">
+  <option value="Zambia">
+  <option value="Zimbabwe">
+  <!-- Bonus common ones -->
+  <option value="India">
+  <option value="United States">
+  <option value="United Kingdom">
+  <option value="Canada">
+  <option value="United Arab Emirates">
+</datalist>
+
+    <!-- University -->
+    <label class="field-label">University / Campus <span class="required">*</span></label>
+    <input list="universities" id="campus" placeholder="e.g., Stanford University, IIT Delhi" required />
+    <datalist id="universities"></datalist>
+
+    <!-- Current Status -->
+    <label class="field-label">Current Status <span class="required">*</span></label>
+    <select id="status" required>
+      <option value="" disabled selected>Select your status</option>
+      <option>Undergraduate Student</option>
+      <option>Graduate Student</option>
+      <option>Alumni</option>
+      <option>Faculty/Staff</option>
+      <option>Other</option>
+    </select>
+
+    <!-- Major / Course -->
+    <label class="field-label">Major / Course <span class="required">*</span></label>
+    <input list="majors" id="course" placeholder="e.g., Computer Science, Medicine (type if not listed)" required />
+    <datalist id="majors"></datalist>
+
+    <!-- Graduation Year -->
+    <label class="field-label" id="gradYearLabel">Expected Graduation Year</label>
+    <input type="number" id="gradYear" placeholder="e.g., 2025" min="1950" max="2035" />
+
+    <!-- Current Role -->
+    <label class="field-label">Current Role / Position <span class="required">*</span></label>
+    <input type="text" id="workStatus" placeholder="e.g., Software Engineer at Google, Founder, Student" required />
+
+    <button class="btn" id="saveBtn" disabled>Save & Continue →</button>
+  </div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyC23iQpw8dvOamO5FpcrWWlgTwJ8gvmuM4",
+    authDomain: "reconnect-10733.firebaseapp.com",
+    projectId: "reconnect-10733",
+    storageBucket: "reconnect-10733.firebasestorage.app",
+    messagingSenderId: "902709752297",
+    appId: "1:902709752297:web:b89e694688d25472ac1b78"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let selectedFile = null;
+  const preview = document.getElementById('preview');
+
+  // Popular countries
+  const countries = ["India","United States","United Kingdom","Canada","Australia","Germany","Singapore","France","United Arab Emirates","Netherlands","Switzerland","Japan","China","South Korea","Other"];
+  countries.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    document.getElementById('countries').appendChild(opt);
+  });
+
+  // Popular majors (user can type anything if not found)
+  const popularMajors = [
+    "Computer Science","Information Technology","Electrical Engineering","Mechanical Engineering",
+    "Business Administration","Finance","Economics","Data Science","Artificial Intelligence",
+    "Medicine (MBBS)","Nursing","Pharmacy","Biotechnology","Civil Engineering",
+    "Psychology","Law","Architecture","Design","Marketing","Journalism","Other"
+  ];
+  popularMajors.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    document.getElementById('majors').appendChild(opt);
+  });
+
+  // Load universities
+  fetch('https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json')
+    .then(r => r.json())
+    .then(data => {
+      const list = document.getElementById('universities');
+      data.slice(0, 5000).forEach(u => {  // Limit for performance
+        const opt = document.createElement('option');
+        opt.value = u.name;
+        list.appendChild(opt);
+      });
+    });
+
+  // Photo handling
+  document.getElementById('photo').addEventListener('change', e => {
+    selectedFile = e.target.files[0];
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        preview.src = reader.result;
+        preview.classList.remove('default');
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+    checkRequiredFields();
+  });
+
+  // Graduation year logic for Alumni
+  document.getElementById('status').addEventListener('change', () => {
+    const status = document.getElementById('status').value;
+    const label = document.getElementById('gradYearLabel');
+    const input = document.getElementById('gradYear');
+    if (status === "Alumni") {
+      label.innerHTML = 'Year of Graduation <span class="required">*</span>';
+      input.required = true;
+      input.placeholder = "e.g., 2022";
+    } else {
+      label.textContent = 'Expected Graduation Year';
+      input.required = false;
+      input.placeholder = "e.g., 2026";
+    }
+    checkRequiredFields();
+  });
+
+  // Upload photo to ImgBB
+  async function uploadPhoto(file) {
+    const form = new FormData();
+    form.append('image', file);
+    const res = await fetch('https://api.imgbb.com/1/upload?key=05163a0dd1a27a6334b22abb1d279bec', {
+      method: 'POST', body: form
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error("Upload failed");
+    return json.data.url;
+  }
+
+  // Pre-fill data
+  auth.onAuthStateChanged(async user => {
+    if (!user) return location.href = "login5.html";
+    const doc = await db.collection("users").doc(user.uid).get();
+    if (doc.exists) {
+      const d = doc.data();
+      if (d.name) document.getElementById("name").value = d.name;
+      if (d.country) document.getElementById("country").value = d.country;
+      if (d.campus) document.getElementById("campus").value = d.campus;
+      if (d.status) document.getElementById("status").value = d.status;
+      if (d.course) document.getElementById("course").value = d.course;
+      if (d.gradYear) document.getElementById("gradYear").value = d.gradYear;
+      if (d.workStatus) document.getElementById("workStatus").value = d.workStatus;
+      if (d.photoUrl) {
+        preview.src = d.photoUrl;
+        preview.classList.remove('default');
+      }
+    } else if (user.displayName) {
+      document.getElementById("name").value = user.displayName;
+    }
+    checkRequiredFields();
+  });
+
+  // Validation
+  function checkRequiredFields() {
+    const name = document.getElementById("name").value.trim();
+    const country = document.getElementById("country").value.trim();
+    const campus = document.getElementById("campus").value.trim();
+    const status = document.getElementById("status").value;
+    const course = document.getElementById("course").value.trim();
+    const workStatus = document.getElementById("workStatus").value.trim();
+    const hasPhoto = selectedFile || !preview.classList.contains('default');
+
+    let gradYearValid = true;
+    if (document.getElementById("status").value === "Alumni") {
+      const year = document.getElementById("gradYear").value;
+      gradYearValid = year && year >= 1950 && year <= 2035;
+    }
+
+    const allGood = name && country && campus && status && course && workStatus && hasPhoto && gradYearValid;
+    document.getElementById("saveBtn").disabled = !allGood;
+  }
+
+  ["name","country","campus","status","course","workStatus","gradYear"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', checkRequiredFields);
+    if (el) el.addEventListener('change', checkRequiredFields);
+  });
+
+  // Save Profile
+  document.getElementById("saveBtn").onclick = async () => {
+    if (preview.classList.contains('default')) {
+      alert("Please upload a profile photo.");
+      return;
+    }
+    if (document.getElementById("status").value === "Alumni" && !document.getElementById("gradYear").value) {
+      alert("Alumni must enter their graduation year.");
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    document.getElementById("container").classList.add("loading");
+    const saveBtn = document.getElementById("saveBtn");
+    saveBtn.textContent = "Saving...";
+
+    let photoUrl = preview.src;
+    if (selectedFile) {
+      try {
+        photoUrl = await uploadPhoto(selectedFile);
+      } catch (e) {
+        if (!confirm("Photo upload failed. Continue without new photo?")) {
+          document.getElementById("container").classList.remove("loading");
+          saveBtn.textContent = "Save & Continue →";
+          return;
+        }
+      }
+    }
+
+    await db.collection("users").doc(user.uid).set({
+      name: document.getElementById("name").value.trim(),
+      country: document.getElementById("country").value.trim(),
+      campus: document.getElementById("campus").value.trim(),
+      status: document.getElementById("status").value,
+      course: document.getElementById("course").value.trim(),
+      gradYear: document.getElementById("gradYear").value ? parseInt(document.getElementById("gradYear").value) : null,
+      workStatus: document.getElementById("workStatus").value.trim(),
+      photoUrl: photoUrl.includes('placeholder') ? "" : photoUrl,
+      hasCompletedProfile: true,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    alert("Profile completed successfully!");
+    window.location.href = "compus home.html";
+  };
+
+  // Logout
+  document.querySelector(".logout").addEventListener("click", () => {
+    if (confirm("Log out?")) auth.signOut().then(() => location.href = "login5.html");
+  });
+</script>
+</body>
+</html>

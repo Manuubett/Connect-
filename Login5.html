@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FollowUp Connect — Join or Log In</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root { --blue:#0066ff; --light:#f8fbff; --gray:#666; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(135deg,#0066ff,#66ccff);
+      color:#fff; min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+    }
+    .card {
+      background:rgba(255,255,255,0.15); backdrop-filter:blur(12px);
+      border-radius:16px; width:100%; max-width:420px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.2);
+      overflow:hidden;
+    }
+    .tabs {
+      display:flex; background:rgba(255,255,255,0.1);
+    }
+    .tab {
+      flex:1; padding:16px; text-align:center; font-weight:600;
+      cursor:pointer; transition:0.3s;
+    }
+    .tab.active { background:#fff; color:var(--blue); }
+    .form-container { padding:30px; }
+    h1 { font-size:1.8rem; text-align:center; margin-bottom:8px; }
+    p { font-size:0.95rem; opacity:0.9; text-align:center; margin-bottom:20px; }
+    input {
+      width:100%; padding:14px; margin:10px 0; border:none; border-radius:8px;
+      font-family:inherit; font-size:1rem;
+    }
+    button {
+      width:100%; padding:14px; margin-top:16px; background:#fff; color:var(--blue);
+      border:none; border-radius:8px; font-weight:600; font-size:1rem; cursor:pointer;
+      transition:0.3s;
+    }
+    button:hover { background:#e5f0ff; transform:translateY(-2px); }
+    .error { color:#ff6b6b; font-size:0.85rem; margin-top:8px; text-align:center; min-height:20px; }
+    .link { text-align:center; margin-top:16px; font-size:0.9rem; }
+    .link a { color:#fff; text-decoration:underline; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="showForm('login')">Log In</div>
+      <div class="tab" onclick="showForm('signup')">Sign Up</div>
+    </div>
+
+    <div class="form-container">
+      <!-- LOGIN -->
+      <div id="loginFormContainer">
+        <h1>Welcome Back</h1>
+        <p>Log in to reconnect with your network.</p>
+        <form id="loginForm">
+          <input type="email" id="loginEmail" placeholder="Email" required />
+          <input type="password" id="loginPassword" placeholder="Password" required />
+          <button type="submit">Log In</button>
+        </form>
+        <div class="error" id="loginError"></div>
+        <div class="link">
+          <a href="#" id="forgotLink">Forgot password?</a>
+        </div>
+      </div>
+
+      <!-- SIGNUP -->
+      <div id="signupFormContainer" class="hidden">
+        <h1>Join FollowUp Connect</h1>
+        <p>Start your journey with fellow graduates.</p>
+        <form id="signupForm">
+          <input type="text" id="fullName" placeholder="Full Name" required />
+          <input type="email" id="email" placeholder="Email Address" required />
+          <input type="password" id="password" placeholder="Password (6+ chars)" required minlength="6" />
+          <button type="submit">Create Account</button>
+        </form>
+        <div class="error" id="signupError"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ==== Firebase Config ====
+  const firebaseConfig = {
+    apiKey: "AIzaSyC23iQpw8dvOamO5FpcrWWlgTwJ8gvmuM4",
+    authDomain: "reconnect-10733.firebaseapp.com",
+    projectId: "reconnect-10733",
+    storageBucket: "reconnect-10733.firebasestorage.app",
+    messagingSenderId: "902709752297",
+    appId: "1:902709752297:web:b89e694688d25472ac1b78"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // ==== Tab Switch ====
+  function showForm(form) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[onclick="showForm('${form}')"]`).classList.add('active');
+    document.getElementById('loginFormContainer').classList.add('hidden');
+    document.getElementById('signupFormContainer').classList.add('hidden');
+    document.getElementById(form + 'FormContainer').classList.remove('hidden');
+  }
+
+  function showError(elId, message) {
+    document.getElementById(elId).textContent = message;
+  }
+
+  // ==== LOGIN ====
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Logging in...';
+    try {
+      const credential = await auth.signInWithEmailAndPassword(email, password);
+      const user = credential.user;
+      const doc = await db.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        window.location.href = 'compus profile.html';
+      } else {
+        window.location.href = 'compus home.html';
+      }
+    } catch (err) {
+      showError('loginError', err.message);
+      btn.disabled = false; btn.textContent = 'Log In';
+    }
+  });
+
+  // ==== SIGNUP ====
+  document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Creating...';
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      const user = cred.user;
+      if (name) await user.updateProfile({ displayName: name });
+      // create minimal user doc
+      await db.collection('users').doc(user.uid).set({
+        name,
+        email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      window.location.href = 'compus profile.html';
+    } catch (err) {
+      showError('signupError', err.message);
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  });
+
+  // ==== Forgot Password ====
+  document.getElementById('forgotLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = prompt('Enter your email for password reset:');
+    if (!email) return;
+    try {
+      await auth.sendPasswordResetEmail(email);
+      alert('Reset link sent! Check your inbox.');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  });
+
+  // ==== Auto Redirect ====
+  auth.onAuthStateChanged(async user => {
+    if (!user) return;
+    const doc = await db.collection('users').doc(user.uid).get();
+    if (!doc.exists) window.location.href = 'compus profile.html';
+    else window.location.href = 'compus home.html';
+  });
+</script>
+
+</body>
+</html>

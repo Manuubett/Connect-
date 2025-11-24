@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opportunities — Life After Campus</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+  body { font-family:"Poppins",sans-serif; background:#f9fafe; margin:0; padding:0; }
+  header { background:#0066ff; color:white; text-align:center; padding:20px; }
+
+  nav {
+    background:#0066ff;
+    padding:12px 20px;
+    display:flex;
+    justify-content:center;
+    gap:30px;
+    flex-wrap:wrap;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    position:sticky;
+    top:0;
+    z-index:1000;
+  }
+  nav a {
+    color:white;
+    text-decoration:none;
+    font-weight:600;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    border-radius:8px;
+    transition:background 0.3s;
+  }
+  nav a:hover { background:rgba(255,255,255,0.2); }
+  nav a i { font-size:18px; }
+
+  .container { max-width:800px; margin:20px auto; padding:10px; }
+
+  .filters { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:15px; }
+  .filters input, .filters select {
+    width:48%; padding:10px; border-radius:8px; border:1px solid #ccc;
+  }
+
+  .list-item {
+    background:#fff; padding:12px; border-radius:10px;
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    margin-bottom:12px; box-shadow:0 2px 5px rgba(0,0,0,0.07);
+  }
+
+  .thumb {
+    width:70px; height:70px; border-radius:10px; object-fit:cover;
+    background:#0066ff; color:white; font-size:26px; font-weight:600;
+    display:flex; justify-content:center; align-items:center;
+    text-transform:uppercase;
+  }
+
+  .list-item .info h3 { margin:0; font-size:16px; color:#0066ff; }
+  .list-item .info p { margin:3px 0 0; font-size:13px; color:#555; }
+
+  .modal-bg {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.6); display:none; justify-content:center;
+    align-items:center; padding:20px; z-index:9999;
+  }
+
+  .modal-box {
+    background:white; max-width:700px; width:100%; max-height:90vh;
+    overflow-y:auto; border-radius:14px; padding:25px; position:relative;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    animation:fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { transform:translateY(20px); opacity:0; }
+    to { transform:translateY(0); opacity:1; }
+  }
+
+  .modal-box img { width:100%; border-radius:10px; margin:10px 0; }
+  .close-btn {
+    position:absolute; right:15px; top:15px;
+    background:#ff3b3b; border:none; color:white;
+    padding:6px 12px; border-radius:6px; cursor:pointer;
+  }
+
+  .tag {
+    display:inline-block; background:#e0ecff; color:#0056d6;
+    padding:5px 10px; border-radius:20px; margin-right:5px; font-size:12px;
+  }
+
+  button {
+    background:#0066ff; color:white; border:none;
+    padding:8px 12px; border-radius:8px; cursor:pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<nav>
+  <a href="compus home.html"><i class="fas fa-home"></i> Home</a>
+  <a href="network.html"><i class="fas fa-users"></i> Network</a>
+  
+  <a href="compus profile.html"><i class="fas fa-user"></i> Profile</a>
+</nav>
+
+<header>
+  <h1>Career & Growth Opportunities</h1>
+  <p>Explore internships, jobs, scholarships, and startups</p>
+</header>
+
+<div class="container">
+  
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search by title, description, or tags...">
+    <select id="filterType">
+      <option value="">All Types</option>
+      <option>Job</option>
+      <option>Internship</option>
+      <option>Freelance</option>
+      <option>Scholarship</option>
+      <option>Startup</option>
+    </select>
+  </div>
+
+  <!-- ADS -->
+  <div id="ad-container" style="width: 320px; height: 50px; margin: 20px auto;">
+    <script type="text/javascript">
+        atOptions = { 'key' : '71c74ed2c78fa84b504991cc8233aa2f', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/71c74ed2c78fa84b504991cc8233aa2f/invoke.js"></script>
+  </div>
+
+  <div id="opportunityList"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal-bg">
+  <div class="modal-box">
+    <!-- ADS -->
+  <div id="ad-container" style="width: 320px; height: 50px; margin: 20px auto;">
+    <script type="text/javascript">
+        atOptions = { 'key' : '71c74ed2c78fa84b504991cc8233aa2f', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/71c74ed2c78fa84b504991cc8233aa2f/invoke.js"></script>
+  </div>
+    <button class="close-btn" onclick="closeModal()">Close</button>
+    <div id="modalContent"></div>
+      <!-- ADS -->
+  <div id="ad-container" style="width: 320px; height: 50px; margin: 20px auto;">
+    <script type="text/javascript">
+        atOptions = { 'key' : '71c74ed2c78fa84b504991cc8233aa2f', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/71c74ed2c78fa84b504991cc8233aa2f/invoke.js"></script>
+  </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC23iQpw8dvOamO5FpcrWWlgTwJ8gvmuM4",
+  authDomain: "reconnect-10733.firebaseapp.com",
+  projectId: "reconnect-10733",
+  storageBucket: "reconnect-10733.firebasestorage.app",
+  messagingSenderId: "902709752297",
+  appId: "1:902709752297:web:b89e694688d25472ac1b78"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+marked.setOptions({ breaks: true, gfm: true });
+
+let opportunities = [];
+
+async function loadOpportunities() {
+  const snapshot = await db.collection("opportunities").orderBy("timestamp","desc").get();
+  opportunities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  renderOpportunities();
+}
+
+function createInitials(text) {
+  if (!text) return "NA";
+  let words = text.trim().split(" ");
+  if (words.length === 1) return words[0].substring(0,2).toUpperCase();
+  return (words[0][0] + (words[1]?.[0] || "")).toUpperCase();
+}
+
+function renderOpportunities() {
+  const container = document.getElementById("opportunityList");
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const filterType = document.getElementById("filterType").value;
+  container.innerHTML = "";
+
+  opportunities
+    .filter(o => {
+      if (filterType && o.type !== filterType) return false;
+      if (!search) return true;
+      return (
+        o.title?.toLowerCase().includes(search) ||
+        o.description?.toLowerCase().includes(search) ||
+        (o.tags || []).some(t => t.toLowerCase().includes(search))
+      );
+    })
+    .forEach(o => {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      item.onclick = () => openModal(o);
+
+      const thumb = o.imageUrl
+        ? `<img src="${o.imageUrl}" class="thumb">`
+        : `<div class="thumb">${createInitials(o.title)}</div>`;
+
+      item.innerHTML = `
+        ${thumb}
+        <div class="info">
+          <h3>${o.title}</h3>
+          <p>${o.type || "Unknown"} • ${o.postedByName || "Anonymous"}</p>
+        </div>
+      `;
+      container.appendChild(item);
+    });
+}
+
+function openModal(o) {
+  const tagsHTML = (o.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
+
+  const applyBtn = o.link
+    ? `<a href="${o.link}" target="_blank"><button>Apply / Learn More</button></a>`
+    : `<button disabled style="opacity:0.5;">Apply / Learn More</button>`;
+
+  document.getElementById("modalContent").innerHTML = `
+    <h2>${o.title}</h2>
+    <p><strong>Type:</strong> ${o.type}</p>
+    <p><strong>Posted by:</strong> ${o.postedByName || "Anonymous"}</p>
+
+    ${o.imageUrl 
+      ? `<img src="${o.imageUrl}" alt="image">`
+      : `<div class="thumb" style="width:100px;height:100px;margin:10px auto;">${createInitials(o.title)}</div>`
+    }
+
+    <div class="markdown-body">${marked.parse(o.description || "")}</div>
+
+    <div style="margin:15px 0;">${tagsHTML}</div>
+    ${applyBtn}
+  `;
+
+  document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+document.getElementById("searchInput").addEventListener("input", renderOpportunities);
+document.getElementById("filterType").addEventListener("change", renderOpportunities);
+
+loadOpportunities();
+</script>
+
+</body>
+</html>
