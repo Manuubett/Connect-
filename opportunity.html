@@ -136,7 +136,7 @@
 
 <!-- Notification Sound -->
 <audio id="notifSound" preload="auto">
-  <source src="https://assets.mixkit.co/sfx/preview/mixkit-bell-notification-933.mp3" type="audio/mpeg">
+  <source src="new-notification-021-370045.mp3" type="audio/mpeg">
 </audio>
 
 <style>
@@ -335,7 +335,7 @@ if(!window.navNotifLoaded){
   let previousSentRequests=[];
   let oppTimestamp = null;  // detect only new opportunities
 
-  document.addEventListener('click',()=>{sound.play().catch(()=>{});sound.pause();sound.currentTime=0;},{once:true});
+// Replace the old unlock line with this completely silent one const unlockSound = () => {   sound.muted = true;   sound.play().then(() => {     sound.pause();     sound.currentTime = 0;     sound.muted = false;   }).catch(() => {});   document.removeEventListener('click', unlockSound); }; document.addEventListener('click', unlockSound);
 
   bell.addEventListener('click', e => {
     e.preventDefault();

@@ -1035,8 +1035,17 @@ if(!window.navNotifLoaded){
   let previousSentRequests=[];
   let oppTimestamp = null;  // detect only new opportunities
 
-  document.addEventListener('click',()=>{sound.play().catch(()=>{});sound.pause();sound.currentTime=0;},{once:true});
-
+// Replace the old unlock line with this completely silent one
+const unlockSound = () => {
+  sound.muted = true;
+  sound.play().then(() => {
+    sound.pause();
+    sound.currentTime = 0;
+    sound.muted = false;
+  }).catch(() => {});
+  document.removeEventListener('click', unlockSound);
+};
+document.addEventListener('click', unlockSound);
   bell.addEventListener('click', e => {
     e.preventDefault();
     dropdown.style.display = dropdown.style.display==='none'?'block':'none';

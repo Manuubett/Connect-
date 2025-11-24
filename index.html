@@ -37,6 +37,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <source src="notify.mp3" type="audio/mpeg">
+<source src="notify.ogg" type="audio/ogg">
 
   <style>
     :root {
@@ -446,6 +448,52 @@
       }
     }
   </style>
+  <style>
+/* Modern gradient background */
+#mainNav {
+  background: linear-gradient(135deg, #4361ee, #5a67ff, #7c3aed);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(6px);
+}
+
+/* Link styling */
+#mainNav a {
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 15px;
+  transition: 0.2s ease-in-out;
+}
+
+#mainNav a:hover {
+  opacity: 0.85;
+  transform: scale(1.04);
+}
+
+/* Bell icon hover */
+#notifBell i:hover {
+  transform: scale(1.2);
+  transition: 0.2s;
+}
+
+/* Notification dropdown */
+#notifDropdown {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* The rest of your existing notification CSS stays unchanged */
+</style>
 </head>
 <body>
 
@@ -454,12 +502,88 @@
   <p>Professional Community of Graduates & Mentors</p>
 </header>
 
-<nav>
-  <a href="#"><i class="fas fa-home"></i> Home</a>
+
+
+  <!-- ===== NAVIGATION ===== -->
+<nav id="mainNav" style="background:#4361ee;padding:12px 20px;display:flex;justify-content:center;align-items:center;gap:20px;flex-wrap:wrap;position:sticky;top:0;z-index:1000;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+  <a href="compus home.html"><i class="fas fa-home"></i> Home</a>
   <a href="network.html"><i class="fas fa-users"></i> Network</a>
-  <a href="Opportunity.html"><i class="fas fa-briefcase"></i> Opportunities</a>
+  <a href="opportunity.html"><i class="fas fa-briefcase"></i> Opportunities</a>
+  <a href="chat.html"><i class="fas fa-comments"></i> Chats</a>
   <a href="compus profile.html"><i class="fas fa-user"></i> Profile</a>
+
+  <!-- Notification Bell with Badge -->
+  <div id="notifBellWrapper" style="margin-left:auto;position:relative;">
+    <a href="#" id="notifBell">
+      <i class="fas fa-bell" style="font-size:18px;"></i>
+      <span id="notifBadge" style="position:absolute;top:-8px;right:-8px;background:#ef4444;color:white;font-size:11px;font-weight:700;padding:2px 6px;border-radius:12px;min-width:16px;text-align:center;display:none;">0</span>
+    </a>
+    <!-- Dropdown panel -->
+    <div id="notifDropdown" style="display:none;position:absolute;right:0;top:36px;width:320px;background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden;z-index:2000;max-height:400px;overflow-y:auto;">
+      <div style="padding:12px;font-weight:600;border-bottom:1px solid #e2e8f0;background:#f8f9fc;">Notifications</div>
+      <div id="notifList"></div>
+      <div id="notifEmpty" style="padding:20px;text-align:center;color:#94a3b8;">No new notifications</div>
+    </div>
+  </div>
 </nav>
+
+<!-- Notification Sound -->
+<audio id="notifSound" preload="auto">
+  <source src="new-notification-021-370045.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const notifSound = document.getElementById("notifSound");
+
+// Log when the audio is loaded
+notifSound.onloadeddata = () => {
+  console.log("Sound loaded successfully.");
+};
+
+// Function to play sound with console logs
+function playNotificationSound() {
+  console.log("Attempting to play notification sound...");
+
+  notifSound.play()
+    .then(() => {
+      console.log("Notification sound is playing.");
+    })
+    .catch(err => {
+      console.error("Error playing sound:", err);
+    });
+}
+</script>
+<style>
+/* Bell shake */
+@keyframes fa-shake {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(-15deg); }
+  20% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  40% { transform: rotate(15deg); }
+  50% { transform: rotate(-10deg); }
+  60% { transform: rotate(10deg); }
+  70% { transform: rotate(-5deg); }
+  80% { transform: rotate(5deg); }
+  90% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+.fa-shake { animation: fa-shake 0.8s ease-in-out; display:inline-block; color:#fff !important; }
+
+/* Notification items */
+#notifList .notificationItem { display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #e2e8f0;cursor:pointer;transition:background 0.2s; }
+#notifList .notificationItem:hover { background:#f1f5ff; }
+#notifList .notificationItem img { width:40px;height:40px;border-radius:50%;object-fit:cover;margin-right:12px; }
+#notifList .notificationContent { flex:1; }
+#notifList .notificationTitle { font-weight:600;color:#1e293b; }
+#notifList .notificationMsg { font-size:0.9rem;color:#64748b; }
+#notifList .notificationTime { font-size:0.75rem;color:#94a3b8;margin-top:4px; }
+#notifList .notifActions { display:flex;gap:6px;margin-left:6px; }
+#notifList .btn-small { padding:4px 8px;border:none;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer; }
+#notifList .btnAccept { background:#dcfce7;color:#166534; }
+#notifList .btnDecline { background:#fee2e2;color:#991b1b; }
+</style>
+
 
 <div class="container">
   <div class="welcome">
@@ -797,7 +921,7 @@
   searchBar.addEventListener("input", async e => {
     const q = e.target.value.toLowerCase();
     const snap = await db.collection("posts").orderBy("createdAt", "desc").get();
-    feed.innerHTML = "";
+    feed.innerHTML = "";8
     
     if (snap.empty) {
       feed.innerHTML = "<div class='no-posts'><i class='fas fa-search'></i><p>No posts found matching your search.</p></div>";
@@ -864,5 +988,249 @@
   });
 </script>
 
+
+<script>
+if(!window.navNotifLoaded){
+  window.navNotifLoaded = true;
+
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  const badge = document.getElementById('notifBadge');
+  const bell = document.getElementById('notifBell');
+  const dropdown = document.getElementById('notifDropdown');
+  const list = document.getElementById('notifList');
+  const emptyMsg = document.getElementById('notifEmpty');
+  const sound = document.getElementById('notifSound');
+
+  let currentUser=null;
+  let previousCount=0;
+  let previousSentRequests=[];
+  let oppTimestamp = null;  // detect only new opportunities
+
+// Replace the old unlock line with this completely silent one const unlockSound = () => {   sound.muted = true;   sound.play().then(() => {     sound.pause();     sound.currentTime = 0;     sound.muted = false;   }).catch(() => {});   document.removeEventListener('click', unlockSound); }; document.addEventListener('click', unlockSound);
+
+  bell.addEventListener('click', e => {
+    e.preventDefault();
+    dropdown.style.display = dropdown.style.display==='none'?'block':'none';
+  });
+
+  auth.onAuthStateChanged(user=>{
+    if(!user) return;
+    currentUser=user;
+    initNotifications();
+  });
+
+  async function initNotifications(){
+
+    // ---------- USER NOTIFICATIONS ----------
+    db.collection('users').doc(currentUser.uid).onSnapshot(async doc=>{
+      const data = doc.data()||{};
+      const received = data.receivedRequests||[];
+      const sent = data.sentRequests||[];
+      const connections = data.connections||[];
+
+      let newlyAccepted=[];
+      if(previousSentRequests.length>0){
+        newlyAccepted = previousSentRequests.filter(uid=>!sent.includes(uid) && connections.includes(uid));
+      }
+      previousSentRequests = [...sent];
+
+      const chatSnap = await db.collection('chats')
+        .where('users','array-contains',currentUser.uid)
+        .get();
+
+      const unreadCounts = await Promise.all(chatSnap.docs.map(async chatDoc=>{
+        const chatData = chatDoc.data();
+        const partnerId = chatData.users.find(u=>u!==currentUser.uid);
+        const unreadSnap = await chatDoc.ref.collection('messages')
+          .where('senderId','==',partnerId)
+          .where('seen','==',false).get();
+        return unreadSnap.size;
+      }));
+
+      const total = received.length + unreadCounts.reduce((a,b)=>a+b,0) + newlyAccepted.length;
+
+      badge.textContent = total>99?'99+':total;
+      badge.style.display = total>0?'inline-block':'none';
+
+      if(total>previousCount && previousCount!==0){
+        sound.currentTime=0; sound.play().catch(()=>{});
+        bell.querySelector('i').classList.add('fa-shake');
+        setTimeout(()=>bell.querySelector('i').classList.remove('fa-shake'),800);
+      }
+      previousCount=total;
+
+      renderDropdownNotifications(received,newlyAccepted,chatSnap);
+    });
+
+    // ---------- OPPORTUNITIES ----------
+    db.collection('opportunities')
+      .orderBy('timestamp','desc')
+      .limit(1)
+      .onSnapshot(snap=>{
+        if(snap.empty) return;
+
+        const doc = snap.docs[0];
+        const data = doc.data();
+
+        // Only trigger for BRAND NEW opportunity
+        if(oppTimestamp === data.timestamp) return;
+        oppTimestamp = data.timestamp;
+
+        prependDropdownItem({
+          type:'opportunity',
+          id:doc.id,
+          title:data.title,
+          msg:'New opportunity posted'
+        });
+
+        incrementBadge();
+      });
+  }
+
+
+  // ---------- RENDER ALL NOTIFICATIONS ----------
+  function renderDropdownNotifications(received,newlyAccepted,chats){
+    list.innerHTML='';
+    let hasNotif=false;
+
+    // RECEIVED REQUESTS
+    received.forEach(async uid=>{
+      const userDoc = await db.collection('users').doc(uid).get();
+      if(!userDoc.exists) return;
+      prependDropdownItem({
+        type:'request',
+        uid,
+        name:userDoc.data().name,
+        photo:userDoc.data().photoUrl,
+        msg:'Sent you a connection request'
+      });
+      hasNotif=true;
+    });
+
+    // ACCEPTED REQUESTS
+    newlyAccepted.forEach(async uid=>{
+      const userDoc = await db.collection('users').doc(uid).get();
+      prependDropdownItem({
+        type:'accepted',
+        uid,
+        name:userDoc.data().name,
+        photo:userDoc.data().photoUrl,
+        msg:'Accepted your request'
+      });
+      hasNotif=true;
+    });
+
+    // MESSAGES
+    chats.docs.forEach(async chatDoc=>{
+      const chatData = chatDoc.data();
+      const partnerId = chatData.users.find(u=>u!==currentUser.uid);
+
+      const unreadSnap = await chatDoc.ref.collection('messages')
+        .where('senderId','==',partnerId)
+        .where('seen','==',false).get();
+
+      if(unreadSnap.size>0){
+        const partnerDoc = await db.collection('users').doc(partnerId).get();
+        prependDropdownItem({
+          type:'message',
+          uid:partnerId,
+          chatId:chatDoc.id,
+          name:partnerDoc.data().name,
+          photo:partnerDoc.data().photoUrl,
+          msg:chatData.lastMessage||'Sent a message'
+        });
+        hasNotif=true;
+      }
+    });
+
+    emptyMsg.style.display = hasNotif?'none':'block';
+  }
+
+
+  // ---------- SINGLE NOTIFICATION ITEM ----------
+  function prependDropdownItem(notif){
+    const div = document.createElement('div');
+    div.className='notificationItem';
+    div.dataset.type=notif.type;
+
+    let img = notif.photo ? `<img src="${notif.photo}">` : '<i class="fas fa-bell"></i>';
+
+    div.innerHTML = `
+      <div>${img}</div>
+      <div class="notificationContent">
+        <div class="notificationTitle">${notif.name || notif.title || ''}</div>
+        <div class="notificationMsg">${notif.msg || ''}</div>
+      </div>
+    `;
+
+    // CLICK REDIRECT LOGIC
+    div.onclick = () => {
+      if(notif.type === 'message'){
+        window.location.href = `chat.html?with=${notif.uid}`;
+      }
+      else if(notif.type === 'opportunity'){
+        window.location.href = `opportunity.html?id=${notif.id}`;
+      }
+      else if(notif.type === 'request' || notif.type === 'accepted'){
+        window.location.href = `network.html`;
+      }
+    };
+
+    // ACCEPT / DECLINE BUTTONS
+    if(notif.type==='request'){
+      const actions=document.createElement('div');
+      actions.className='notifActions';
+
+      const btnAccept=document.createElement('button');
+      btnAccept.className='btn-small btnAccept';
+      btnAccept.textContent='Accept';
+      btnAccept.onclick = async e=>{
+        e.stopPropagation();
+        await db.collection('users').doc(currentUser.uid).update({
+          connections: firebase.firestore.FieldValue.arrayUnion(notif.uid),
+          receivedRequests: firebase.firestore.FieldValue.arrayRemove(notif.uid)
+        });
+        await db.collection('users').doc(notif.uid).update({
+          connections: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+          sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+        });
+        div.remove();
+      };
+
+      const btnDecline=document.createElement('button');
+      btnDecline.className='btn-small btnDecline';
+      btnDecline.textContent='Decline';
+      btnDecline.onclick = async e=>{
+        e.stopPropagation();
+        await db.collection('users').doc(currentUser.uid).update({
+          receivedRequests: firebase.firestore.FieldValue.arrayRemove(notif.uid)
+        });
+        await db.collection('users').doc(notif.uid).update({
+          sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+        });
+        div.remove();
+      };
+
+      actions.appendChild(btnAccept);
+      actions.appendChild(btnDecline);
+      div.appendChild(actions);
+    }
+
+    list.prepend(div);
+  }
+
+
+  function incrementBadge(){
+    previousCount++;
+    badge.textContent = previousCount > 99 ? '99+' : previousCount;
+    badge.style.display='inline-block';
+    sound.currentTime=0; sound.play().catch(()=>{});
+    bell.querySelector('i').classList.add('fa-shake');
+    setTimeout(()=> bell.querySelector('i').classList.remove('fa-shake'),800);
+  }
+}
+</script>
 </body>
 </html>
