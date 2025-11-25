@@ -1033,19 +1033,10 @@ if(!window.navNotifLoaded){
   let currentUser=null;
   let previousCount=0;
   let previousSentRequests=[];
-  let oppTimestamp = null;  // detect only new opportunities
+  let oppTimestamp = localStorage.getItem("oppTimestamp") || null;  // detect only new opportunities
 
-// Replace the old unlock line with this completely silent one
-const unlockSound = () => {
-  sound.muted = true;
-  sound.play().then(() => {
-    sound.pause();
-    sound.currentTime = 0;
-    sound.muted = false;
-  }).catch(() => {});
-  document.removeEventListener('click', unlockSound);
-};
-document.addEventListener('click', unlockSound);
+// Replace the old unlock line with this completely silent one const unlockSound = () => {   sound.muted = true;   sound.play().then(() => {     sound.pause();     sound.currentTime = 0;     sound.muted = false;   }).catch(() => {});   document.removeEventListener('click', unlockSound); }; document.addEventListener('click', unlockSound);
+
   bell.addEventListener('click', e => {
     e.preventDefault();
     dropdown.style.display = dropdown.style.display==='none'?'block':'none';
@@ -1096,6 +1087,7 @@ document.addEventListener('click', unlockSound);
         setTimeout(()=>bell.querySelector('i').classList.remove('fa-shake'),800);
       }
       previousCount=total;
+      localStorage.setItem("previousCount", total);
 
       renderDropdownNotifications(received,newlyAccepted,chatSnap);
     });
@@ -1113,7 +1105,7 @@ document.addEventListener('click', unlockSound);
         // Only trigger for BRAND NEW opportunity
         if(oppTimestamp === data.timestamp) return;
         oppTimestamp = data.timestamp;
-
+localStorage.setItem("oppTimestamp", data.timestamp);
         prependDropdownItem({
           type:'opportunity',
           id:doc.id,
@@ -1268,6 +1260,5 @@ document.addEventListener('click', unlockSound);
   }
 }
 </script>
-
-</body>  
+</body>
 </html>

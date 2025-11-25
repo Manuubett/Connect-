@@ -502,7 +502,32 @@
   <p>Professional Community of Graduates & Mentors</p>
 </header>
 
+  <!-- FLOATING APK DOWNLOAD BUTTON -->
+<a href="app-release (6).apk" download id="apkButton">
+  📥 install our APP
+</a>
 
+<style>
+  #apkButton {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4361ee;
+    color: #fff;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 50px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    z-index: 9999;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  #apkButton:hover {
+    transform: scale(1.08);
+  }
+</style>
 
   <!-- ===== NAVIGATION ===== -->
 <nav id="mainNav" style="background:#4361ee;padding:12px 20px;display:flex;justify-content:center;align-items:center;gap:20px;flex-wrap:wrap;position:sticky;top:0;z-index:1000;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
@@ -1006,7 +1031,7 @@ if(!window.navNotifLoaded){
   let currentUser=null;
   let previousCount=0;
   let previousSentRequests=[];
-  let oppTimestamp = null;  // detect only new opportunities
+  let oppTimestamp = localStorage.getItem("oppTimestamp") || null;  // detect only new opportunities
 
 // Replace the old unlock line with this completely silent one const unlockSound = () => {   sound.muted = true;   sound.play().then(() => {     sound.pause();     sound.currentTime = 0;     sound.muted = false;   }).catch(() => {});   document.removeEventListener('click', unlockSound); }; document.addEventListener('click', unlockSound);
 
@@ -1060,6 +1085,7 @@ if(!window.navNotifLoaded){
         setTimeout(()=>bell.querySelector('i').classList.remove('fa-shake'),800);
       }
       previousCount=total;
+      localStorage.setItem("previousCount", total);
 
       renderDropdownNotifications(received,newlyAccepted,chatSnap);
     });
@@ -1077,7 +1103,7 @@ if(!window.navNotifLoaded){
         // Only trigger for BRAND NEW opportunity
         if(oppTimestamp === data.timestamp) return;
         oppTimestamp = data.timestamp;
-
+localStorage.setItem("oppTimestamp", data.timestamp);
         prependDropdownItem({
           type:'opportunity',
           id:doc.id,
