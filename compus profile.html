@@ -212,8 +212,39 @@
 
     <!-- University -->
     <label class="field-label">University / Campus <span class="required">*</span></label>
-    <input list="universities" id="campus" placeholder="e.g., Stanford University, IIT Delhi" required />
-    <datalist id="universities"></datalist>
+  <div style="position:relative;">
+  <input 
+    type="text" 
+    id="campus" 
+    placeholder="Search your university or type manually..."
+    autocomplete="off"
+    required
+  />
+
+  <div id="campusResults" class="search-dropdown"></div>
+</div>
+
+<style>
+.search-dropdown {
+  position:absolute;
+  top:100%; left:0; width:100%;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:10px;
+  max-height:220px;
+  overflow-y:auto;
+  z-index:50;
+  display:none;
+}
+.search-dropdown div {
+  padding:10px 15px;
+  border-bottom:1px solid #f1f1f1;
+  cursor:pointer;
+}
+.search-dropdown div:hover {
+  background:#eef5ff;
+}
+</style>
 
     <!-- Current Status -->
     <label class="field-label">Current Status <span class="required">*</span></label>
@@ -387,8 +418,7 @@
   // Save Profile
   document.getElementById("saveBtn").onclick = async () => {
     if (preview.classList.contains('default')) {
-      alert("Please upload a profile photo.");
-      return;
+      await smartModal("Profile completed successfully!", "success");
     }
     if (document.getElementById("status").value === "Alumni" && !document.getElementById("gradYear").value) {
       alert("Alumni must enter their graduation year.");
@@ -407,7 +437,8 @@
       try {
         photoUrl = await uploadPhoto(selectedFile);
       } catch (e) {
-        if (!confirm("Photo upload failed. Continue without new photo?")) {
+const goAhead = await smartConfirm("Photo upload failed. Continue without new photo?");
+if (!goAhead) {
           document.getElementById("container").classList.remove("loading");
           saveBtn.textContent = "Save & Continue →";
           return;
@@ -431,11 +462,164 @@
     alert("Profile completed successfully!");
     window.location.href = "compus home.html";
   };
+document.querySelector(".logout").addEventListener("click", async () => {
+  const out = await smartConfirm("Are you sure you want to log out?");
+  
+  if (out) {
+    await auth.signOut();
+    location.href = "login5.html";
+  }
+});
+</script>
+<!-- SMART MESSAGE MODAL -->
+<style>
+  .smart-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0; pointer-events: none;
+    transition: 0.25s ease;
+  }
+  .smart-overlay.active { opacity: 1; pointer-events: auto; }
 
-  // Logout
-  document.querySelector(".logout").addEventListener("click", () => {
-    if (confirm("Log out?")) auth.signOut().then(() => location.href = "login5.html");
+  .smart-modal {
+    background: #fff;
+    width: 88%;
+    max-width: 350px;
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    animation: pop 0.25s ease;
+  }
+  @keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .smart-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .smart-msg { font-size: 1rem; color: #444; }
+
+  .smart-btn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .smart-ok { background: #0066ff; color: #fff; }
+  .smart-cancel { background: #eee; color: #444; margin-top: 10px; }
+</style>
+
+<div id="smartOverlay" class="smart-overlay">
+  <div class="smart-modal">
+    <div class="smart-title" id="smartTitle"></div>
+    <div class="smart-msg" id="smartMessage"></div>
+    <button class="smart-btn smart-ok" id="smartOK">Okay</button>
+    <button class="smart-btn smart-cancel" id="smartCancel" style="display:none;">Cancel</button>
+  </div>
+</div>
+
+<script>
+function smartModal(msg, type="info") {
+  return new Promise(resolve => {
+    const overlay = document.getElementById("smartOverlay");
+    const title = document.getElementById("smartTitle");
+    const message = document.getElementById("smartMessage");
+    const okBtn = document.getElementById("smartOK");
+    const cancelBtn = document.getElementById("smartCancel");
+
+    title.textContent = type === "success" ? "Success!" :
+                        type === "error" ? "Error" :
+                        type === "warning" ? "Warning" : "Message";
+
+    message.textContent = msg;
+
+    cancelBtn.style.display = "none";
+    overlay.classList.add("active");
+
+    okBtn.onclick = () => {
+      overlay.classList.remove("active");
+      resolve(true);
+    };
   });
+}
+
+function smartConfirm(msg) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById("smartOverlay");
+    const title = document.getElementById("smartTitle");
+    const message = document.getElementById("smartMessage");
+    const okBtn = document.getElementById("smartOK");
+    const cancelBtn = document.getElementById("smartCancel");
+
+    title.textContent = "Confirm";
+    message.textContent = msg;
+
+    cancelBtn.style.display = "block";
+    overlay.classList.add("active");
+
+    okBtn.onclick = () => {
+      overlay.classList.remove("active");
+      resolve(true);
+    };
+    cancelBtn.onclick = () => {
+      overlay.classList.remove("active");
+      resolve(false);
+    };
+  });
+}
+
+</script>
+<script>
+let institutions = [];
+const input = document.getElementById("campus");
+const results = document.getElementById("campusResults");
+
+// Load JSON
+fetch("institutions.json")
+  .then(res => res.json())
+  .then(data => {
+    institutions = [
+      ...data.kenya_universities_public,
+      ...data.kenya_universities_private,
+      ...data.kenya_national_polytechnics,
+      ...data.kenya_tvet_colleges,
+      ...data.world_universities_top
+    ];
+  });
+
+// Show results as user types
+input.addEventListener("input", () => {
+  const query = input.value.toLowerCase();
+  const filtered = institutions.filter(inst => inst.toLowerCase().includes(query));
+  results.innerHTML = filtered.slice(0, 20).map(i => `<div>${i}</div>`).join("");
+  results.style.display = filtered.length ? "block" : "none";
+});
+
+// Click to select
+results.addEventListener("click", e => {
+  if (e.target.tagName === "DIV") {
+    input.value = e.target.textContent;
+    results.style.display = "none";
+  }
+});
+
+// Hide dropdown when clicking outside
+document.addEventListener("click", e => {
+  if (!input.contains(e.target) && !results.contains(e.target)) {
+    results.style.display = "none";
+  }
+});
 </script>
 </body>
 </html>
