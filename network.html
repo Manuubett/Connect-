@@ -530,7 +530,10 @@
 <audio id="notifSound" preload="auto">
   <source src="new-notification-021-370045.mp3" type="audio/mpeg">
 </audio>
-
+<audio id="notifSound" preload="auto">
+  <source src="/sounds/notification.mp3" type="audio/mpeg">
+  <source src="new-notification-021-370045.mp3" type="audio/ogg">
+</audio>
 <style>
 /* Bell shake */
 @keyframes fa-shake {
@@ -1015,9 +1018,8 @@
     
   </script>  
   
-
 <script>
-if(!window.navNotifLoaded){
+if (!window.navNotifLoaded) {
   window.navNotifLoaded = true;
 
   const db = firebase.firestore();
@@ -1030,233 +1032,317 @@ if(!window.navNotifLoaded){
   const emptyMsg = document.getElementById('notifEmpty');
   const sound = document.getElementById('notifSound');
 
-  let currentUser=null;
-  let previousCount = parseInt(localStorage.getItem("previousCount")) || 0;
-  let previousSentRequests=[];
-  let oppTimestamp = localStorage.getItem("oppTimestamp") || null;  // detect only new opportunities
+  let currentUser = null;
+  let audioUnlocked = false;
 
-// Replace the old unlock line with this completely silent one const unlockSound = () => {   sound.muted = true;   sound.play().then(() => {     sound.pause();     sound.currentTime = 0;     sound.muted = false;   }).catch(() => {});   document.removeEventListener('click', unlockSound); }; document.addEventListener('click', unlockSound);
+  // Cross-tab shared state (unique keys to avoid conflicts)
+  let previousCount = parseInt(localStorage.getItem("notifPrevCount_v2") || "0");
+  let lastSeenTimestamp = parseInt(localStorage.getItem("notifLastSeen_v2") || "0");
 
-  bell.addEventListener('click', e => {
-    e.preventDefault();
-    dropdown.style.display = dropdown.style.display==='none'?'block':'none';
+  let pageActive = !document.hidden;
+  document.addEventListener("visibilitychange", () => {
+    pageActive = !document.hidden;
   });
 
-  auth.onAuthStateChanged(user=>{
-    if(!user) return;
-    currentUser=user;
+  // ───────────────────────────── ULTRA-RELIABLE AUDIO UNLOCK ─────────────────────────────
+  const unlockAudioContext = () => {
+    if (audioUnlocked) return;
+
+    const tryUnlock = () => {
+      return sound.play().then(() => {
+        sound.pause();
+        sound.currentTime = 0;
+        audioUnlocked = true;
+      }).catch(() => false);
+    };
+
+    tryUnlock().then(unlocked => {
+      if (!unlocked) {
+        // Fallback: tiny silent tone via Web Audio API
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          gain.gain.value = 0.001;
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(0);
+          osc.stop(ctx.currentTime + 0.01);
+          ctx.resume().then(() => audioUnlocked = true);
+        }
+      }
+    });
+
+    // Remove all listeners after first gesture
+    document.removeEventListener('click', unlockAudioContext);
+    document.removeEventListener('touchstart', unlockAudioContext);
+    document.removeEventListener('keydown', unlockAudioContext);
+  };
+
+  document.addEventListener('click', unlockAudioContext, { once: true });
+  document.addEventListener('touchstart', unlockAudioContext, { once: true });
+  document.addEventListener('keydown', unlockAudioContext, { once: true });
+
+  // ───────────────────────────── SAFE SOUND PLAYER ─────────────────────────────
+  function playNotificationSound() {
+    if (!audioUnlocked || !pageActive) return;
+
+    const now = Date.now();
+    const lastPlayed = parseInt(localStorage.getItem("notifLastPlayed_v2") || "0");
+
+    // Prevent duplicates across tabs & spam
+    if (now - lastPlayed < 1200) return;
+
+    sound.currentTime = 0;
+    sound.volume = 0.7;
+    sound.play().catch(() => {}); // silently ignore any rare failures
+
+    localStorage.setItem("notifLastPlayed_v2", now);
+
+    // Bell shake animation
+    const icon = bell.querySelector('i');
+    if (icon) {
+      icon.classList.add('fa-shake');
+      setTimeout(() => icon.classList.remove('fa-shake'), 800);
+    }
+  }
+
+  // ───────────────────────────── BELL CLICK & MARK SEEN ─────────────────────────────
+  bell.addEventListener('click', e => {
+    e.preventDefault();
+    const isOpen = dropdown.style.display === 'block';
+    dropdown.style.display = isOpen ? 'none' : 'block';
+
+    if (!isOpen) {
+      lastSeenTimestamp = Date.now();
+      localStorage.setItem("notifLastSeen_v2", lastSeenTimestamp);
+      badge.style.display = 'none'; // optional: hide badge when opened
+    }
+  });
+
+  // ───────────────────────────── AUTH & INIT ─────────────────────────────
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      currentUser = null;
+      return;
+    }
+    currentUser = user;
     initNotifications();
   });
 
-  async function initNotifications(){
+  // ───────────────────────────── MAIN NOTIFICATION LISTENER ─────────────────────────────
+  async function initNotifications() {
+    let previousSentRequests = [];
+    let oppTimestamp = localStorage.getItem("oppTimestamp_v2") || null;
 
-    // ---------- USER NOTIFICATIONS ----------
-    db.collection('users').doc(currentUser.uid).onSnapshot(async doc=>{
-      const data = doc.data()||{};
-      const received = data.receivedRequests||[];
-      const sent = data.sentRequests||[];
-      const connections = data.connections||[];
+    // User notifications (requests, accepts, messages)
+    db.collection('users').doc(currentUser.uid).onSnapshot(async doc => {
+      const data = doc.data() || {};
+      const received = data.receivedRequests || [];
+      const sent = data.sentRequests || [];
+      const connections = data.connections || [];
 
-      let newlyAccepted=[];
-      if(previousSentRequests.length>0){
-        newlyAccepted = previousSentRequests.filter(uid=>!sent.includes(uid) && connections.includes(uid));
-      }
+      // Detect newly accepted requests
+      const newlyAccepted = previousSentRequests.length > 0
+        ? previousSentRequests.filter(uid => !sent.includes(uid) && connections.includes(uid))
+        : [];
       previousSentRequests = [...sent];
 
+      // Count unread messages
       const chatSnap = await db.collection('chats')
-        .where('users','array-contains',currentUser.uid)
+        .where('users', 'array-contains', currentUser.uid)
         .get();
 
-      const unreadCounts = await Promise.all(chatSnap.docs.map(async chatDoc=>{
+      const unreadCounts = await Promise.all(chatSnap.docs.map(async chatDoc => {
         const chatData = chatDoc.data();
-        const partnerId = chatData.users.find(u=>u!==currentUser.uid);
+        const partnerId = chatData.users.find(u => u !== currentUser.uid);
         const unreadSnap = await chatDoc.ref.collection('messages')
-          .where('senderId','==',partnerId)
-          .where('seen','==',false).get();
+          .where('senderId', '==', partnerId)
+          .where('seen', '==', false)
+          .get();
         return unreadSnap.size;
       }));
 
-      const total = received.length + unreadCounts.reduce((a,b)=>a+b,0) + newlyAccepted.length;
+      const total = received.length + unreadCounts.reduce((a, b) => a + b, 0) + newlyAccepted.length;
 
-      badge.textContent = total>99?'99+':total;
-      badge.style.display = total>0?'inline-block':'none';
+      // Update badge
+      badge.textContent = total > 99 ? '99+' : total;
+      badge.style.display = total > 0 ? 'inline-block' : 'none';
 
-      if(total>previousCount && previousCount!==0){
-        sound.currentTime=0; sound.play().catch(()=>{});
-        bell.querySelector('i').classList.add('fa-shake');
-        setTimeout(()=>bell.querySelector('i').classList.remove('fa-shake'),800);
+      // Play sound only on real increase + not recently seen
+      if (total > previousCount && Date.now() - lastSeenTimestamp > 1000) {
+        playNotificationSound();
       }
-      previousCount=total;
-      localStorage.setItem("previousCount", total);
 
-      renderDropdownNotifications(received,newlyAccepted,chatSnap);
+      previousCount = total;
+      localStorage.setItem("notifPrevCount_v2", total);
+
+      renderDropdownNotifications(received, newlyAccepted, chatSnap.docs);
     });
 
-    // ---------- OPPORTUNITIES ----------
+    // New Opportunity Listener
     db.collection('opportunities')
-      .orderBy('timestamp','desc')
+      .orderBy('timestamp', 'desc')
       .limit(1)
-      .onSnapshot(snap=>{
-        if(snap.empty) return;
+      .onSnapshot(snap => {
+        if (snap.empty) return;
+        const latest = snap.docs[0];
+        const data = latest.data();
+        const ts = data.timestamp?.toString() || data.timestamp;
 
-        const doc = snap.docs[0];
-        const data = doc.data();
+        if (ts && oppTimestamp !== ts) {
+          oppTimestamp = ts;
+          localStorage.setItem("oppTimestamp_v2", ts);
 
-        // Only trigger for BRAND NEW opportunity
-        if(oppTimestamp === data.timestamp) return;
-        oppTimestamp = data.timestamp;
-localStorage.setItem("oppTimestamp", data.timestamp);
-        prependDropdownItem({
-          type:'opportunity',
-          id:doc.id,
-          title:data.title,
-          msg:'New opportunity posted'
-        });
+          prependDropdownItem({
+            type: 'opportunity',
+            id: latest.id,
+            title: data.title || 'New Opportunity',
+            msg: 'New opportunity posted'
+          });
 
-        incrementBadge();
+          playNotificationSound();
+          previousCount++;
+          localStorage.setItem("notifPrevCount_v2", previousCount);
+          badge.textContent = previousCount > 99 ? '99+' : previousCount;
+          badge.style.display = 'inline-block';
+        }
       });
   }
 
+  // ───────────────────────────── RENDER NOTIFICATIONS ─────────────────────────────
+  function renderDropdownNotifications(received, newlyAccepted, chatDocs) {
+    list.innerHTML = '';
+    let hasItems = false;
 
-  // ---------- RENDER ALL NOTIFICATIONS ----------
-  function renderDropdownNotifications(received,newlyAccepted,chats){
-    list.innerHTML='';
-    let hasNotif=false;
-
-    // RECEIVED REQUESTS
-    received.forEach(async uid=>{
+    // Received Requests
+    received.forEach(async uid => {
       const userDoc = await db.collection('users').doc(uid).get();
-      if(!userDoc.exists) return;
+      if (!userDoc.exists) return;
+      const d = userDoc.data();
       prependDropdownItem({
-        type:'request',
+        type: 'request',
         uid,
-        name:userDoc.data().name,
-        photo:userDoc.data().photoUrl,
-        msg:'Sent you a connection request'
+        name: d.name,
+        photo: d.photoUrl,
+        msg: 'Sent you a connection request'
       });
-      hasNotif=true;
+      hasItems = true;
     });
 
-    // ACCEPTED REQUESTS
-    newlyAccepted.forEach(async uid=>{
+    // Newly Accepted
+    newlyAccepted.forEach(async uid => {
       const userDoc = await db.collection('users').doc(uid).get();
+      if (!userDoc.exists) return;
+      const d = userDoc.data();
       prependDropdownItem({
-        type:'accepted',
+        type: 'accepted',
         uid,
-        name:userDoc.data().name,
-        photo:userDoc.data().photoUrl,
-        msg:'Accepted your request'
+        name: d.name,
+        photo: d.photoUrl,
+        msg: 'Accepted your connection request'
       });
-      hasNotif=true;
+      hasItems = true;
     });
 
-    // MESSAGES
-    chats.docs.forEach(async chatDoc=>{
+    // Unread Messages
+    chatDocs.forEach(async chatDoc => {
       const chatData = chatDoc.data();
-      const partnerId = chatData.users.find(u=>u!==currentUser.uid);
-
+      const partnerId = chatData.users.find(u => u !== currentUser.uid);
       const unreadSnap = await chatDoc.ref.collection('messages')
-        .where('senderId','==',partnerId)
-        .where('seen','==',false).get();
+        .where('senderId', '==', partnerId)
+        .where('seen', '==', false)
+        .get();
 
-      if(unreadSnap.size>0){
+      if (unreadSnap.size > 0) {
         const partnerDoc = await db.collection('users').doc(partnerId).get();
+        if (!partnerDoc.exists) return;
+        const d = partnerDoc.data();
         prependDropdownItem({
-          type:'message',
-          uid:partnerId,
-          chatId:chatDoc.id,
-          name:partnerDoc.data().name,
-          photo:partnerDoc.data().photoUrl,
-          msg:chatData.lastMessage||'Sent a message'
+          type: 'message',
+          uid: partnerId,
+          chatId: chatDoc.id,
+          name: d.name,
+          photo: d.photoUrl,
+          msg: chatData.lastMessage || 'Sent you a message'
         });
-        hasNotif=true;
+        hasItems = true;
       }
     });
 
-    emptyMsg.style.display = hasNotif?'none':'block';
+    emptyMsg.style.display = hasItems ? 'none' : 'block';
   }
 
-
-  // ---------- SINGLE NOTIFICATION ITEM ----------
-  function prependDropdownItem(notif){
+  // ───────────────────────────── PREPEND ITEM ─────────────────────────────
+  function prependDropdownItem(notif) {
     const div = document.createElement('div');
-    div.className='notificationItem';
-    div.dataset.type=notif.type;
+    div.className = 'notificationItem';
+    div.dataset.type = notif.type;
 
-    let img = notif.photo ? `<img src="${notif.photo}">` : '<i class="fas fa-bell"></i>';
+    const img = notif.photo
+      ? `<img src="${notif.photo}" alt="user">`
+      : '<i class="fas fa-bell"></i>';
 
     div.innerHTML = `
       <div>${img}</div>
       <div class="notificationContent">
-        <div class="notificationTitle">${notif.name || notif.title || ''}</div>
-        <div class="notificationMsg">${notif.msg || ''}</div>
+        <div class="notificationTitle">${notif.name || notif.title || 'Notification'}</div>
+        <div class="notificationMsg">${notif.msg}</div>
       </div>
     `;
 
-    // CLICK REDIRECT LOGIC
     div.onclick = () => {
-      if(notif.type === 'message'){
-        window.location.href = `chat.html?with=${notif.uid}`;
-      }
-      else if(notif.type === 'opportunity'){
-        window.location.href = `opportunity.html?id=${notif.id}`;
-      }
-      else if(notif.type === 'request' || notif.type === 'accepted'){
-        window.location.href = `network.html`;
-      }
+      if (notif.type === 'message') window.location.href = `chat.html?with=${notif.uid}`;
+      else if (notif.type === 'opportunity') window.location.href = `opportunity.html?id=${notif.id}`;
+      else window.location.href = 'network.html';
     };
 
-    // ACCEPT / DECLINE BUTTONS
-    if(notif.type==='request'){
-      const actions=document.createElement('div');
-      actions.className='notifActions';
+    // Request Actions (Accept/Decline)
+    if (notif.type === 'request') {
+      const actions = document.createElement('div');
+      actions.className = 'notifActions';
 
-      const btnAccept=document.createElement('button');
-      btnAccept.className='btn-small btnAccept';
-      btnAccept.textContent='Accept';
-      btnAccept.onclick = async e=>{
+      const accept = document.createElement('button');
+      accept.className = 'btn-small btnAccept';
+      accept.textContent = 'Accept';
+      accept.onclick = async e => {
         e.stopPropagation();
-        await db.collection('users').doc(currentUser.uid).update({
-          connections: firebase.firestore.FieldValue.arrayUnion(notif.uid),
-          receivedRequests: firebase.firestore.FieldValue.arrayRemove(notif.uid)
-        });
-        await db.collection('users').doc(notif.uid).update({
-          connections: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
-          sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+        await db.runTransaction(async tx => {
+          const userRef = db.collection('users').doc(currentUser.uid);
+          const senderRef = db.collection('users').doc(notif.uid);
+          tx.update(userRef, {
+            connections: firebase.firestore.FieldValue.arrayUnion(notif.uid),
+            receivedRequests: firebase.firestore.FieldValue.arrayRemove(notif.uid)
+          });
+          tx.update(senderRef, {
+            connections: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+            sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+          });
         });
         div.remove();
       };
 
-      const btnDecline=document.createElement('button');
-      btnDecline.className='btn-small btnDecline';
-      btnDecline.textContent='Decline';
-      btnDecline.onclick = async e=>{
+      const decline = document.createElement('button');
+      decline.className = 'btn-small btnDecline';
+      decline.textContent = 'Decline';
+      decline.onclick = async e => {
         e.stopPropagation();
-        await db.collection('users').doc(currentUser.uid).update({
-          receivedRequests: firebase.firestore.FieldValue.arrayRemove(notif.uid)
-        });
-        await db.collection('users').doc(notif.uid).update({
-          sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+        await db.runTransaction(async tx => {
+          tx.update(db.collection('users').doc(currentUser.uid), {
+            receivedRequests: firebase.firestore.FieldValue.arrayRemove(notif.uid)
+          });
+          tx.update(db.collection('users').doc(notif.uid), {
+            sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+          });
         });
         div.remove();
       };
 
-      actions.appendChild(btnAccept);
-      actions.appendChild(btnDecline);
+      actions.append(accept, decline);
       div.appendChild(actions);
     }
 
     list.prepend(div);
-  }
-
-
-  function incrementBadge(){
-    previousCount++;
-    badge.textContent = previousCount > 99 ? '99+' : previousCount;
-    badge.style.display='inline-block';
-    sound.currentTime=0; sound.play().catch(()=>{});
-    bell.querySelector('i').classList.add('fa-shake');
-    setTimeout(()=> bell.querySelector('i').classList.remove('fa-shake'),800);
   }
 }
 </script>
