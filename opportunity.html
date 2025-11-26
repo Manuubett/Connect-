@@ -332,7 +332,7 @@ if(!window.navNotifLoaded){
   const sound = document.getElementById('notifSound');
 
   let currentUser=null;
-  let previousCount=0;
+  let previousCount = parseInt(localStorage.getItem("previousCount")) || 0;
   let previousSentRequests=[];
   let oppTimestamp = localStorage.getItem("oppTimestamp") || null;  // detect only new opportunities
 
