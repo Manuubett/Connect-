@@ -400,7 +400,7 @@
       right: 20px;
       color: white;
       font-size: 2rem;
-      cursor: pointer;
+      cu2rsor: pointer;
       background: rgba(0, 0, 0, 0.5);
       width: 50px;
       height: 50px;
@@ -472,7 +472,7 @@
         flex-wrap: wrap;
       }
       
-      nav a {
+      nav a {6
         padding: 12px 15px;
         font-size: 14px;
       }
@@ -493,7 +493,7 @@
   <header>    
     <h1 style="margin: 0 0 8px 0; font-weight: 700; font-size: 1.8rem;">Network — Find People & Mentors</h1>  
     <div class="small" style="opacity: 0.9;">Search, connect, and grow your professional network</div> 
-    
+    <div id="networkContainer"></div>
     
   </header>  
   <!-- ===== NAVIGATION ===== -->
@@ -1344,6 +1344,29 @@ if (!window.navNotifLoaded) {
 
     list.prepend(div);
   }
+  function displayNetwork(networkItems) {
+  const container = document.getElementById('networkContainer'); // Make sure you have this div in your HTML
+  container.innerHTML = ''; // Clear existing items
+
+  networkItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'network-item';
+    div.innerHTML = `
+      <h3>${item.name}</h3>
+      <p>${item.description}</p>
+    `;
+    container.appendChild(div);
+  });
+}
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('Service Worker registered', reg))
+      .catch(err => console.log('Service Worker failed', err));
+  });
 }
 </script>
 </body>
