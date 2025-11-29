@@ -1,0 +1,10 @@
+{
+  "name": "compus-notifications",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.3.0"
+  }
+}
